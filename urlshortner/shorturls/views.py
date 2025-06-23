@@ -1,4 +1,3 @@
-# shortener/views.py
 from rest_framework import generics, permissions
 from .models import ShortUrls
 from .serializers import ShortUrlsSerializer
@@ -32,14 +31,14 @@ class CRShortUrlsAPIView(generics.CreateAPIView):
 class RedShortUrlsAPIView(APIView):
     permission_classes = []
 
-    def get(self, request, short_code):
-        instance = get_object_or_404(ShortUrls, code=short_code)
+    def get(self, request, code):
+        instance = get_object_or_404(ShortUrls, code=code)
         if instance.is_expired():
             return Response({"error": "Link expired!"}, status=410)
 
         # Logging to external logger service
         log_data = {
-            "short_code": short_code,
+            "short_code": code,
             "accessed_at": timezone.now().isoformat(),
             "ip": get_client_ip(request),
             "user_agent": request.META.get('HTTP_USER_AGENT', '')

@@ -5,24 +5,31 @@ from datetime import timedelta
 import string, random
 
 class ShortUrlsSerializer(serializers.ModelSerializer):
-    code = serializers.CharField(required=False)
+    code = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = ShortUrls
         fields = ['original', 'code']
 
     def create(self, validated_data):
-        short_code = validated_data.get('code') or self.generate_short_code()
+        code = validated_data.get('code')
+
+        if not code:
+            code = self._generate_unique_code()
+        else:
+            if ShortUrls.objects.filter(code=code).exists():
+                raise serializers.ValidationError({'code': 'This short code is already taken.'})
+
         original_url = validated_data['original']
         expires_at = timezone.now() + timedelta(minutes=30)
 
         return ShortUrls.objects.create(
             original=original_url,
-            code=short_code,
+            code=code,
             expires_at=expires_at
         )
 
-    def generate_short_code(self, length=6):
+    def _generate_unique_code(self, length=6):
         chars = string.ascii_letters + string.digits
         while True:
             code = ''.join(random.choices(chars, k=length))
